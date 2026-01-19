@@ -1,39 +1,30 @@
-#[allow(unused_imports)]
-use std::{
-    io::{BufReader, prelude::*},
-    net::{TcpListener, TcpStream},
-};
+use std::fs::File;
+use std::io::{self, BufReader, Read};
 
-fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    println!("Logs from your program will appear here!");
+fn main() -> io::Result<()> {
+    let mut file = File::open("messages.txt")?;
+    let mut buf = [0u8; 8];
+    let mut curr_line = String::from("");
 
-    // TODO: Uncomment the code below to pass the first stage
-    //
-    let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
-
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                println!("accepted new connection");
-                handle_connection(stream);
-            }
-            Err(e) => {
-                println!("error: {}", e);
-            }
+    loop {
+        let n = file.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        let str = String::from_utf8_lossy(&buf[..n]);
+        if str.contains("\n") {
+            let split_str: Vec<&str> = str.split("\n").collect();
+            let first = split_str[0];
+            curr_line.push_str(first);
+            println!("read: {}", curr_line);
+            curr_line = String::from("");
+            let second = split_str[1];
+            curr_line.push_str(second);
+        } else {
+            curr_line.push_str(&str);
         }
     }
-}
+    // println!("read: {}", curr_line);
 
-fn handle_connection(mut stream: TcpStream) {
-    let buf_reader = BufReader::new(&stream);
-    let http_req: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
-    // println!("req: {http_req:#?}");
-
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
-    stream.write_all(response.as_bytes()).unwrap();
+    Ok(())
 }
