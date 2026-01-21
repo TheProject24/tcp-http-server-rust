@@ -1,13 +1,17 @@
-use std::fs::File;
-use std::io::{self, BufReader, Read};
+use std::io::{self, Read};
+use std::net::TcpListener;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
 fn main() -> io::Result<()> {
-    let mut file = File::open("messages.txt")?;
-    let rx = get_lines_channel(file);
-    for line in rx {
-        println!("read: {}", line);
+    let listener = TcpListener::bind("127.0.0.1:42069")?;
+    for stream in listener.incoming() {
+        let rx = get_lines_channel(stream?);
+        println!("Connection established");
+        for line in rx {
+            println!("{}", line);
+        }
+        println!("Connection closed");
     }
     Ok(())
 }
