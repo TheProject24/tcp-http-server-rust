@@ -15,16 +15,7 @@ impl Request {
         let mut req_reader = BufReader::new(reader);
         let mut line = String::new();
         req_reader.read_line(&mut line);
-        let mut arr = line.split(' ');
-        let method = arr.next().ok_or("missing method")?;
-        let request_target = arr.next().ok_or("missing method")?;
-        let http_version = arr.next().ok_or("missing method")?;
-        let res = RequestLine {
-            http_version: http_version.to_string(),
-            request_target: request_target.to_string(),
-            method: method.to_string(),
-        };
-        Ok(Request { request_line: res })
+        line.split(' ')
     }
 }
 
