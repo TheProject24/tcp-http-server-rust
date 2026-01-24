@@ -15,12 +15,17 @@ impl Request {
         let mut req_reader = BufReader::new(reader);
         let mut line = String::new();
         req_reader.read_line(&mut line);
-        let mut arr = line.split(' ');
-        let method = arr.next().ok_or("missing method")?;
-        let request_target = arr.next().ok_or("missing method")?;
-        let http_version = arr.next().ok_or("missing method")?;
+        let arr: Vec<&str> = line.split(' ').collect();
+        if arr.len() != 3 {
+            return Err("err".to_string());
+        }
+        let method = arr[0];
+        let request_target = arr[1];
+        let http_version = arr[2];
+        let real_version: Vec<&str> = http_version.split('/').collect();
+        let version = real_version[1].trim_end();
         let res = RequestLine {
-            http_version: http_version.to_string(),
+            http_version: version.to_string(),
             request_target: request_target.to_string(),
             method: method.to_string(),
         };
@@ -54,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_bad_get_request_line() {
-        let input = "GET /joe HTTP/1.1\r\nHost: localhost:3000\r\n\r\n";
+        let input = "GET HTTP/1.1\r\nHost: localhost:3000\r\n\r\n";
         let request = Request::from_reader(input.as_bytes());
 
         assert!(request.is_err());
