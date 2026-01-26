@@ -3,17 +3,29 @@ use std::net::TcpListener;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
+mod headers;
 mod request;
+use headers::Headers;
+use request::Request;
 
 fn main() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:42069")?;
     for stream in listener.incoming() {
-        let rx = get_lines_channel(stream?);
-        println!("Connection established");
-        for line in rx {
-            println!("{}", line);
+        match Request::from_reader(stream?) {
+            Ok(request) => {
+                let req_line = request.request_line.unwrap();
+                let req_headers = request.request_headers;
+                println!("Request line:");
+                println!("- Method: {}", req_line.method);
+                println!("- Target: {}", req_line.request_target);
+                println!("- Version: {}", req_line.http_version);
+                println!("Request headers:");
+                println!("- Headers: {:?}", req_headers.headers);
+            }
+            Err(e) => {
+                println!("Error parsing request: {}", e);
+            }
         }
-        println!("Connection closed");
     }
     Ok(())
 }

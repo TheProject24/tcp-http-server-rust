@@ -1,20 +1,31 @@
 use std::io::{BufRead, BufReader, Read};
 
+use crate::headers::Headers;
+
 #[derive(PartialEq)]
 enum ParseState {
     Initialized,
     Done,
 }
 
+#[derive(PartialEq)]
+enum ParsingPart {
+    ReqLine,
+    ReqHeaders,
+    ReqBody,
+}
+
 pub struct Request {
-    request_line: Option<RequestLine>,
+    pub request_line: Option<RequestLine>,
+    pub request_headers: Headers,
+    pub parsing_part: ParsingPart,
     parse_state: ParseState,
 }
 
 pub struct RequestLine {
-    http_version: String,
-    request_target: String,
-    method: String,
+    pub http_version: String,
+    pub request_target: String,
+    pub method: String,
 }
 
 impl Request {
@@ -23,30 +34,58 @@ impl Request {
         let mut buf: Vec<u8> = Vec::new();
         let mut request = Request {
             request_line: None,
+            request_headers: Headers::new(),
+            parsing_part: ParsingPart::ReqLine,
             parse_state: ParseState::Initialized,
         };
 
-        while request.parse_state != ParseState::Done {
-            let n = match reader.read(&mut small_buf) {
-                Ok(0) => return Err("why".to_string()),
-                Ok(n) => n,
-                Err(_) => return Err("why".to_string()),
-            };
-            buf.extend_from_slice(&small_buf[..n]);
-            let parse_res = request.parse(&mut buf)?;
-            buf.drain(..parse_res);
+        while request.parsing_part != ParsingPart::ReqBody {
+            let parse_res = request.parse(&buf)?;
+
+            if parse_res > 0 {
+                buf.drain(..parse_res);
+            }
+
+            if request.parsing_part == ParsingPart::ReqBody {
+                break;
+            }
+
+            if parse_res == 0 {
+                let n = match reader.read(&mut small_buf) {
+                    Ok(0) => return Err("no more data in reader".to_string()),
+                    Ok(n) => n,
+                    Err(_) => return Err("Error reading from stream".to_string()),
+                };
+                buf.extend_from_slice(&small_buf[..n]);
+            }
         }
+        println!("reached this");
         Ok(request)
     }
 
     fn parse(&mut self, data: &[u8]) -> Result<usize, String> {
-        if self.parse_state == ParseState::Initialized {
+        if self.parse_state == ParseState::Initialized && self.parsing_part == ParsingPart::ReqLine
+        {
             let (size, req_line) = parse_request_line(data)?;
             if size == 0 {
                 return Ok(0);
             } else {
                 self.request_line = req_line;
                 self.parse_state = ParseState::Done;
+                self.parsing_part = ParsingPart::ReqHeaders;
+                return Ok(size);
+            }
+        } else if self.parsing_part == ParsingPart::ReqHeaders {
+            let (size, done) = self.request_headers.parse(data)?;
+            println!("in req header");
+            if size == 0 {
+                println!("size is 0");
+                return Ok(0);
+            } else if !done {
+                println!("size isnt zero");
+                return Ok(size);
+            } else {
+                self.parsing_part = ParsingPart::ReqBody;
                 return Ok(size);
             }
         }
