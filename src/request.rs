@@ -59,7 +59,6 @@ impl Request {
                 buf.extend_from_slice(&small_buf[..n]);
             }
         }
-        println!("reached this");
         Ok(request)
     }
 
@@ -77,12 +76,9 @@ impl Request {
             }
         } else if self.parsing_part == ParsingPart::ReqHeaders {
             let (size, done) = self.request_headers.parse(data)?;
-            println!("in req header");
             if size == 0 {
-                println!("size is 0");
                 return Ok(0);
             } else if !done {
-                println!("size isnt zero");
                 return Ok(size);
             } else {
                 self.parsing_part = ParsingPart::ReqBody;

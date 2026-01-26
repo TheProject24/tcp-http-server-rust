@@ -12,26 +12,72 @@ impl Headers {
     }
     pub fn parse(&mut self, data: &[u8]) -> Result<(usize, bool), String> {
         let crlf_found = data.windows(2).position(|c| c == b"\r\n");
-        println!("LINE: {}", str::from_utf8(&data[..]).unwrap());
         if let Some(crlf_pos) = crlf_found {
             // we have full line
-            let line = str::from_utf8(&data[..crlf_pos]).unwrap();
-            println!("LINE: {}", line);
+            let line = str::from_utf8(&data[..crlf_pos]).unwrap().trim();
             if line.is_empty() {
                 return Ok((2, true));
             }
 
             let arr: Vec<&str> = line.split(": ").collect();
-            println!("{:?}", arr);
             if arr.len() != 2 {
                 return Err("not enough arguments in req body".to_string());
             }
             let key = arr[0];
+            if key.chars().last() == Some(' ') {
+                return Err("invalid spacing in req body".to_string());
+            }
             let value = arr[1].trim();
             self.headers.insert(key.to_string(), value.to_string());
             Ok((line.len() + 2, false))
         } else {
             Ok((0, false))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_valid_single_header() {
+        let mut headers = Headers::new();
+        let data = b"Host: localhost:42069\r\n\r\n";
+        let (n, done) = headers.parse(data).unwrap();
+
+        assert_eq!(headers.headers.get("Host").unwrap(), "localhost:42069");
+        assert_eq!(n, 23);
+        assert!(!done);
+    }
+
+    #[test]
+    fn test_valid_single_header_with_extra_whitespace() {
+        let mut headers = Headers::new();
+        let data = b"   Host: localhost:42069   \r\n\r\n";
+        let (n, done) = headers.parse(data).unwrap();
+
+        assert_eq!(headers.headers.get("Host").unwrap(), "localhost:42069");
+        assert!(!done);
+    }
+
+    #[test]
+    fn test_valid_done() {
+        let mut headers = Headers::new();
+        let data = b"\r\n";
+        let (n, done) = headers.parse(data).unwrap();
+
+        assert_eq!(n, 2);
+        assert!(done);
+        assert!(headers.headers.is_empty());
+    }
+
+    #[test]
+    fn test_invalid_spacing_header() {
+        let mut headers = Headers::new();
+        let data = b"       Host : localhost:42069       \r\n\r\n";
+        let result = headers.parse(data);
+
+        assert!(result.is_err());
     }
 }
