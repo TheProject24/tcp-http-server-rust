@@ -11,6 +11,7 @@ impl Headers {
         }
     }
     pub fn parse(&mut self, data: &[u8]) -> Result<(usize, bool), String> {
+        const ALLOWED_CHARS: &[u8] = b"!#$%&'*+-.^_`|~";
         let crlf_found = data.windows(2).position(|c| c == b"\r\n");
         if let Some(crlf_pos) = crlf_found {
             // we have full line
@@ -23,7 +24,7 @@ impl Headers {
             if arr.len() != 2 {
                 return Err("not enough arguments in req body".to_string());
             }
-            let key = arr[0];
+            let key = arr[0].to_lowercase();
             if key.chars().last() == Some(' ') {
                 return Err("invalid spacing in req body".to_string());
             }
@@ -46,7 +47,7 @@ mod tests {
         let data = b"Host: localhost:42069\r\n\r\n";
         let (n, done) = headers.parse(data).unwrap();
 
-        assert_eq!(headers.headers.get("Host").unwrap(), "localhost:42069");
+        assert_eq!(headers.headers.get("host").unwrap(), "localhost:42069");
         assert_eq!(n, 23);
         assert!(!done);
     }
@@ -57,7 +58,7 @@ mod tests {
         let data = b"   Host: localhost:42069   \r\n\r\n";
         let (n, done) = headers.parse(data).unwrap();
 
-        assert_eq!(headers.headers.get("Host").unwrap(), "localhost:42069");
+        assert_eq!(headers.headers.get("host").unwrap(), "localhost:42069");
         assert!(!done);
     }
 
