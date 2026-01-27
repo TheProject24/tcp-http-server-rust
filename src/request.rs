@@ -191,4 +191,33 @@ mod tests {
 
         assert!(request.is_err());
     }
+
+    #[test]
+    fn test_parse_headers_standard_headers() {
+        let input = "GET / HTTP/1.1\r\nHost: localhost:42069\r\nUser-Agent: curl/7.81.0\r\nAccept: */*\r\n\r\n";
+        let reader = ChunkReader::new(input, 3);
+        let request = Request::from_reader(reader).unwrap();
+
+        assert_eq!(
+            request.request_headers.headers.get("host").unwrap(),
+            "localhost:42069"
+        );
+        assert_eq!(
+            request.request_headers.headers.get("user-agent").unwrap(),
+            "curl/7.81.0"
+        );
+        assert_eq!(
+            request.request_headers.headers.get("accept").unwrap(),
+            "*/*"
+        );
+    }
+
+    #[test]
+    fn test_parse_headers_malformed_header() {
+        let malformed = "GET / HTTP/1.1\r\nHost localhost:42069\r\n\r\n";
+        let reader = ChunkReader::new(malformed, 3);
+        let request = Request::from_reader(reader);
+
+        assert!(request.is_err());
+    }
 }
