@@ -22,7 +22,7 @@ impl Headers {
 
             let arr: Vec<&str> = line.split(": ").collect();
             if arr.len() != 2 {
-                return Err("not enough arguments in req body".to_string());
+                return Err("Invalid header format".to_string());
             }
             let key = arr[0].to_lowercase();
             if key.chars().last() == Some(' ') {

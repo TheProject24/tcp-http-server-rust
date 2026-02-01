@@ -14,11 +14,13 @@ enum ParsingPart {
     ReqLine,
     ReqHeaders,
     ReqBody,
+    Done,
 }
 
 pub struct Request {
     pub request_line: Option<RequestLine>,
     pub request_headers: Headers,
+    pub request_body: Vec<u8>,
     pub parsing_part: ParsingPart,
     parse_state: ParseState,
 }
@@ -36,18 +38,19 @@ impl Request {
         let mut request = Request {
             request_line: None,
             request_headers: Headers::new(),
+            request_body: Vec::new(),
             parsing_part: ParsingPart::ReqLine,
             parse_state: ParseState::Initialized,
         };
 
-        while request.parsing_part != ParsingPart::ReqBody {
+        while request.parsing_part != ParsingPart::Done {
             let parse_res = request.parse(&buf)?;
 
             if parse_res > 0 {
                 buf.drain(..parse_res);
             }
 
-            if request.parsing_part == ParsingPart::ReqBody {
+            if request.parsing_part == ParsingPart::Done {
                 break;
             }
 
@@ -85,9 +88,28 @@ impl Request {
                 self.parsing_part = ParsingPart::ReqBody;
                 return Ok(size);
             }
-        } else {
-            println!("parsing body");
-            self.request_headers.get("Content-length".to_string());
+        } else if self.parsing_part == ParsingPart::ReqBody {
+            let content_len = self.request_headers.get("content-length".to_string());
+            match content_len {
+                Some(len) => {
+                    self.request_body.extend_from_slice(data);
+                    let expected_len = len
+                        .trim()
+                        .parse()
+                        .map_err(|_| "invalid content len".to_string())?;
+                    if self.request_body.len() > expected_len {
+                        return Err("request body longer than content len".to_string());
+                    } else if self.request_body.len() == expected_len {
+                        self.parsing_part = ParsingPart::Done;
+                        return Ok(data.len());
+                    }
+                    return Ok(data.len());
+                }
+                None => {
+                    self.parsing_part = ParsingPart::Done;
+                    return Ok(data.len());
+                }
+            }
         }
         return Ok(0);
     }

@@ -17,12 +17,16 @@ fn main() -> io::Result<()> {
             Ok(request) => {
                 let req_line = request.request_line.unwrap();
                 let req_headers = request.request_headers;
+                let req_body_bytes = request.request_body;
+                let req_body = String::from_utf8_lossy(&req_body_bytes);
                 println!("Request line:");
                 println!("- Method: {}", req_line.method);
                 println!("- Target: {}", req_line.request_target);
                 println!("- Version: {}", req_line.http_version);
                 println!("Request headers:");
                 println!("- Headers: {:?}", req_headers.headers);
+                println!("Request body:");
+                println!("- Body: {:?}", req_body);
             }
             Err(e) => {
                 println!("Error parsing request: {}", e);

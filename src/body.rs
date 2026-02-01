@@ -7,11 +7,11 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn new(headers: &Headers) -> Body {
+    pub fn new() -> Body {
         Body { body: Vec::new() }
     }
 
-    pub fn parse(self) -> Result<(usize, bool), String> {
+    pub fn append(self) -> Result<(usize, bool), String> {
         todo!();
     }
 }
