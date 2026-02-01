@@ -246,4 +246,24 @@ mod tests {
 
         assert!(request.is_err());
     }
+
+    #[test]
+    fn test_good_body() {
+        let input = "POST /submit HTTP/1.1\r\nHost: localhost:42069\r\nContent-Length: 13\r\n\r\nhello world!\n";
+        let reader = ChunkReader::new(input, 3);
+        let request = Request::from_reader(reader).unwrap();
+
+        let actual_req_body = String::from_utf8_lossy(&request.request_body);
+        let expected_req_body = "hello world!\n".to_string();
+        assert_eq!(actual_req_body, expected_req_body);
+    }
+
+    #[test]
+    fn test_empty_body() {
+        let input = "POST /submit HTTP/1.1\r\nHost: localhost:42069\r\nContent-Length: 0\r\n\r\n";
+        let reader = ChunkReader::new(input, 3);
+        let request = Request::from_reader(reader).unwrap();
+
+        assert_eq!(request.request_body.len(), 0);
+    }
 }

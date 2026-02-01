@@ -51,6 +51,7 @@ impl Headers {
     }
 
     pub fn get(&self, key: String) -> Option<&String> {
+        let key = key.to_lowercase();
         self.headers.get(&key)
     }
 }
