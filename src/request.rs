@@ -1,5 +1,6 @@
 use std::io::{BufRead, BufReader, Read};
 
+use crate::body::Body;
 use crate::headers::Headers;
 
 #[derive(PartialEq)]
@@ -84,6 +85,9 @@ impl Request {
                 self.parsing_part = ParsingPart::ReqBody;
                 return Ok(size);
             }
+        } else {
+            println!("parsing body");
+            self.request_headers.get("Content-length".to_string());
         }
         return Ok(0);
     }

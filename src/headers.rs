@@ -49,6 +49,10 @@ impl Headers {
             Ok((0, false))
         }
     }
+
+    pub fn get(&self, key: String) -> Option<&String> {
+        self.headers.get(&key)
+    }
 }
 
 #[cfg(test)]
