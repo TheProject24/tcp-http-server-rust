@@ -3,12 +3,7 @@ use std::net::TcpListener;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
-mod body;
-mod headers;
-mod request;
-use body::Body;
-use headers::Headers;
-use request::Request;
+use tcp_http_server_rust::request::Request;
 
 fn main() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:42069")?;
