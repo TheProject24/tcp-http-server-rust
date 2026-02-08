@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::net::TcpListener;
 use std::thread;
 
@@ -18,13 +19,36 @@ impl Server {
 
     pub fn listen(self) -> thread::JoinHandle<()> {
         thread::spawn(move || {
-            for stream in self.listener.incoming() {
+            for incoming in self.listener.incoming() {
                 if self.closed {
                     break;
                 }
-                match Request::from_reader(stream.expect("test")) {
-                    Ok(req) => {
+
+                let mut stream = match incoming {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("test");
+                        continue;
+                    }
+                };
+
+                match Request::from_reader(&mut stream) {
+                    Ok(_req) => {
                         println!("parsing req");
+                        if let Err(e) = stream.write_all(
+                            b"HTTP/1.1 200 OK\r\n
+                                Content-Type: text/plain\r\n
+                                Content-Length: 13\r\n
+                                \r\n
+                                hello world!",
+                        ) {
+                            eprintln!("write err {}", e);
+                            continue;
+                        }
+                        if let Err(e) = stream.flush() {
+                            eprintln!("flush err: {}", e);
+                            continue;
+                        }
                     }
                     Err(e) => {
                         eprintln!("err: {}", e);
