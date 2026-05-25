@@ -5,6 +5,10 @@ use std::thread;
 
 use tcp_http_server_rust::request::Request;
 
+/// Main listening process for reading native HTTP requests globally without routing.
+///
+/// Binds manually to localhost:42069 and parses standard streams as they arrive.
+/// It dynamically prints formatted header states logic without applying actual responses.
 fn main() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:42069")?;
     for stream in listener.incoming() {
@@ -31,6 +35,10 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+/// Background channel utility to bridge raw unbuffered readers across threads.
+/// 
+/// Note: Unused currently in broader logic but handles continuous line emission by
+/// maintaining an internal buffer cache spanning arbitrary read alignments.
 fn get_lines_channel<R>(mut reader: R) -> Receiver<String>
 where
     R: Read + Send + 'static,

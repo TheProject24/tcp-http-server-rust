@@ -3,35 +3,48 @@ use std::io::{BufRead, BufReader, Read};
 use crate::body::Body;
 use crate::headers::Headers;
 
+/// Internal state tracking representing whether the initial parse state has begun or completed.
 #[derive(PartialEq)]
 enum ParseState {
     Initialized,
     Done,
 }
 
+/// Represents the current parsing progression through the components of an HTTP request.
 #[derive(PartialEq)]
-enum ParsingPart {
+pub enum ParsingPart {
     ReqLine,
     ReqHeaders,
     ReqBody,
     Done,
 }
 
+/// Fully parsed construct of an incoming HTTP request containing its components.
 pub struct Request {
+    /// Parsed request line parameters like HTTP version, method, and URI target.
     pub request_line: Option<RequestLine>,
+    /// Header configurations received prior to parsing the main payload.
     pub request_headers: Headers,
+    /// Raw unparsed byte sequence containing the request body content (if any).
     pub request_body: Vec<u8>,
+    /// Tracks which logical aspect of the request is currently being parsed.
     pub parsing_part: ParsingPart,
+    /// Tracks the broad progression state.
     parse_state: ParseState,
 }
 
+/// Representation of the first logical string parsed out of an HTTP payload.
 pub struct RequestLine {
+    /// E.g. "1.1" indicating HTTP/1.1 syntax.
     pub http_version: String,
+    /// Targeted URI string mapped like "/" or "/index.html".
     pub request_target: String,
+    /// Command verb, like "GET" or "POST".
     pub method: String,
 }
 
 impl Request {
+    /// Continuously reads from a data stream until a complete HTTP request is fully modeled.
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Request, String> {
         let mut small_buf = [0u8; 8];
         let mut buf: Vec<u8> = Vec::new();
@@ -66,6 +79,7 @@ impl Request {
         Ok(request)
     }
 
+    /// Evaluates raw binary buffer stream logic depending on the parser's currently progressing stage.
     fn parse(&mut self, data: &[u8]) -> Result<usize, String> {
         if self.parse_state == ParseState::Initialized && self.parsing_part == ParsingPart::ReqLine
         {
@@ -115,6 +129,7 @@ impl Request {
     }
 }
 
+/// Helper function to locate trailing carriage-return/newline bindings and separate our HTTP target context out.
 fn parse_request_line(data: &[u8]) -> Result<(usize, Option<RequestLine>), String> {
     let crlf_found = data.windows(2).position(|c| c == b"\r\n");
     if let Some(crlf_pos) = crlf_found {

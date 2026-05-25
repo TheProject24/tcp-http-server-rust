@@ -1,6 +1,7 @@
 use crate::headers::Headers;
 use std::io::{self, Write};
 
+/// Strongly typed enum for standard HTTP status codes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StatusCode {
     Ok = 200,
@@ -8,6 +9,10 @@ pub enum StatusCode {
     InternalServerError = 500,
 }
 
+/// Generates and writes the standard HTTP/1.1 response status line.
+/// 
+/// Constructs a string formatted as `"HTTP/1.1 {code} {Phrase}\r\n"`, writes it to
+/// the stream writer `w`, and propagates any underlying IO errors.
 pub fn write_status_line<W: Write>(w: &mut W, status: StatusCode) -> io::Result<()> {
     let mut http_string = String::from("HTTP/1.1 ");
     let code = status as u16;
@@ -24,6 +29,8 @@ pub fn write_status_line<W: Write>(w: &mut W, status: StatusCode) -> io::Result<
     Ok(())
 }
 
+/// Returns a pre-populated set of `Headers` indicating the standard response
+/// parameters like `Content-Length`, `Connection: close`, and `Content-Type`.
 pub fn get_default_headers(content_len: usize) -> Headers {
     let mut default_headers = Headers::new();
     default_headers.headers.insert("content-length".to_string(), content_len.to_string());
@@ -32,6 +39,8 @@ pub fn get_default_headers(content_len: usize) -> Headers {
     default_headers
 }
 
+/// Iterates over a parsed internal `Headers` structure and writes these attributes
+/// directly to the stream. Automatically appends trailing boundaries like `\r\n`.
 pub fn write_headers<W: Write>(w: &mut W, headers: &Headers) -> io::Result<()> {
     for (key, value) in &headers.headers {
         let mut line = key.to_string();

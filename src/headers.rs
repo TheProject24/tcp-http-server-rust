@@ -1,15 +1,24 @@
 use std::collections::HashMap;
 
+/// Wrapper struct containing dynamic HTTP headers mapped by lowercase key.
 pub struct Headers {
+    /// A hashmap storing header keys as lowercase and string format value.
     pub headers: HashMap<String, String>,
 }
 
 impl Headers {
+    /// Instantiates an empty set of headers mappings.
     pub fn new() -> Headers {
         Headers {
             headers: HashMap::new(),
         }
     }
+
+    /// Incrementally parses incoming raw byte slices `data`.
+    /// 
+    /// Searches for `\r\n` characters denoting logical line breaks. Evaluates 
+    /// headers according to strict HTTP requirements (no invalid spacing, ASCII checks).
+    /// Returns a tuple `(bytes_consumed, is_done)` mapping the progress buffer.
     pub fn parse(&mut self, data: &[u8]) -> Result<(usize, bool), String> {
         const ALLOWED_CHARS: &[u8] = b"!#$%&'*+-.^_`|~";
         let crlf_found = data.windows(2).position(|c| c == b"\r\n");
@@ -50,6 +59,7 @@ impl Headers {
         }
     }
 
+    /// Safely fetches the parsed value for a defined header key via case-insensitive lookup.
     pub fn get(&self, key: String) -> Option<&String> {
         let key = key.to_lowercase();
         self.headers.get(&key)

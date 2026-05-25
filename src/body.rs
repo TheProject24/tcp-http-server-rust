@@ -2,15 +2,19 @@ use std::collections::HashMap;
 
 use crate::headers::Headers;
 
+/// Context managing the underlying payload or content of an HTTP response or request.
 pub struct Body {
+    /// Raw bytes containing the parsed or to-be-sent body.
     pub body: Vec<u8>,
 }
 
 impl Body {
+    /// Initialises a new `Body` struct context with an empty vector.
     pub fn new() -> Body {
         Body { body: Vec::new() }
     }
 
+    /// Placeholder function representing future appending capabilities.
     pub fn append(self) -> Result<(usize, bool), String> {
         todo!();
     }
